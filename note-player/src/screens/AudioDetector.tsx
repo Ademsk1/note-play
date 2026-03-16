@@ -1,72 +1,74 @@
-import * as Note from '@tonaljs/note';
 import { useEffect, useRef, useState } from 'react';
-// const audioContext = new AudioContext();
-let freqArray: Uint8Array<ArrayBufferLike>;
+
+const HEIGHT = 400;
+const WIDTH = window.innerWidth;
 
 export const AudioDetector = () => {
-  const ref = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<null | MediaStream>(null);
+  // const [analyser, setAnalyser] = useState<null | AnalyserNode>(null);
+  const freqArray = useRef<null | Uint8Array<ArrayBuffer>>(null);
   const audioRef = useRef(new AudioContext());
   const analyserRef = useRef<null | AnalyserNode>(null);
-  const [freqSize, setFreqSize] = useState(256);
-  const requestRef = useRef<number | null>(null);
-  const barWidth = window.innerWidth / freqSize;
-  const animate = async (t) => {
-    if (!ref.current) {
-      requestRef.current = requestAnimationFrame(animate);
-    }
-    if (!analyserRef.current) {
-      requestRef.current = requestAnimationFrame(animate);
-      return;
-    }
-    const ctx = ref.current?.getContext('2d');
+  const rafRef = useRef<number>(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode>(null);
 
-    if (!ctx) {
-      requestRef.current = requestAnimationFrame(animate);
-      return;
+  const animate = () => {
+    const freq = freqArray.current as Uint8Array<ArrayBuffer>;
+    analyserRef.current?.getByteFrequencyData(freq);
+    const ctx = canvasRef.current?.getContext('2d');
+    ctx!.fillStyle = 'white';
+    ctx!.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx!.fillStyle = 'black';
+    const barWidth = WIDTH / freq.length;
+    console.log(Math.max(...freq));
+    // console.log(audioRef.current.currentTime);
+    // console.log(audioRef.current.state);
+    for (let i = 0; i < freq.length; i++) {
+      ctx?.fillRect(i * barWidth, window.innerHeight / 2, barWidth, freq[i]);
     }
-    ctx.fillStyle = 'rgb(255,255,255)';
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-    ctx.fillStyle = 'rgb(0 0 0)';
-    let x = 0;
-    analyserRef.current.getByteFrequencyData(freqArray);
 
-    let barHeight;
-    console.log(Math.max(...freqArray));
-
-    for (let i = 0; i < freqArray.length; i++) {
-      barHeight = freqArray[i] * 2 + 1;
-      ctx.fillRect(x, window.innerHeight / 2, barWidth, barHeight);
-      x += barWidth + 1;
-    }
-    requestRef.current = requestAnimationFrame(animate);
+    rafRef.current = requestAnimationFrame(animate);
   };
 
   useEffect(() => {
-    analyserRef.current = audioRef.current.createAnalyser();
-    setFreqSize(analyserRef.current.frequencyBinCount);
-    freqArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    const setup = async () => {
-      // navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      //   const source = analyserRef.current.createMediaStreamSource(stream);
-      //   source.connect(analyserRef.current);
-      // });
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-      });
-      const source = audioRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current!);
+    const requestStream = async () => {
+      await audioRef.current.resume();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setStream(stream);
     };
-    setup();
-    requestRef.current = requestAnimationFrame(animate);
+    requestStream();
   }, []);
+  useEffect(() => {
+    if (!stream) {
+      return;
+    }
+    const track = stream.getAudioTracks()[0];
+
+    console.log('track state:', track.readyState);
+
+    track.onended = () => console.log('track ended');
+    track.onmute = () => console.log('track muted');
+    track.onunmute = () => console.log('track unmuted');
+    const analyser = audioRef.current.createAnalyser();
+    analyserRef.current = analyser;
+    analyserRef.current.fftSize = 2048;
+    freqArray.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+
+    sourceRef.current = audioRef.current.createMediaStreamSource(stream);
+    sourceRef.current.connect(analyserRef.current);
+    analyserRef.current.connect(audioRef.current.destination);
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [stream]);
 
   return (
-    <div>
-      <canvas
-        width={window.innerWidth}
-        height={window.innerHeight}
-        ref={ref}
-      ></canvas>
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={WIDTH}
+      height={HEIGHT}
+    ></canvas>
   );
 };
