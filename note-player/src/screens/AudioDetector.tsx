@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const HEIGHT = 400;
+const HEIGHT = 700;
 const WIDTH = window.innerWidth;
 
 export const AudioDetector = () => {
@@ -21,11 +21,8 @@ export const AudioDetector = () => {
     ctx!.fillRect(0, 0, WIDTH, HEIGHT);
     ctx!.fillStyle = 'black';
     const barWidth = WIDTH / freq.length;
-    console.log(Math.max(...freq));
-    // console.log(audioRef.current.currentTime);
-    // console.log(audioRef.current.state);
     for (let i = 0; i < freq.length; i++) {
-      ctx?.fillRect(i * barWidth, window.innerHeight / 2, barWidth, freq[i]);
+      ctx?.fillRect(i * barWidth, window.innerHeight / 2, barWidth, -freq[i]);
     }
 
     rafRef.current = requestAnimationFrame(animate);
