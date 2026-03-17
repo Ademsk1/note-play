@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 const HEIGHT = 700;
 const WIDTH = window.innerWidth;
@@ -12,17 +12,27 @@ export const AudioDetector = () => {
   const rafRef = useRef<number>(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode>(null);
-
+  const barWidthRef = useRef<number>(100);
   const animate = () => {
     const freq = freqArray.current as Uint8Array<ArrayBuffer>;
     analyserRef.current?.getByteFrequencyData(freq);
-    const ctx = canvasRef.current?.getContext('2d');
-    ctx!.fillStyle = 'white';
-    ctx!.fillRect(0, 0, WIDTH, HEIGHT);
-    ctx!.fillStyle = 'black';
-    const barWidth = WIDTH / freq.length;
+    const ctx = canvasRef.current?.getContext("2d");
+    ctx!.fillStyle = "white";
+    ctx!.fillRect(
+      10,
+      window.innerHeight / 2 - 1,
+      barWidthRef.current * freq.length - 2,
+      -HEIGHT + 1,
+    );
+
     for (let i = 0; i < freq.length; i++) {
-      ctx?.fillRect(i * barWidth, window.innerHeight / 2, barWidth, -freq[i]);
+      ctx!.fillStyle = `rgb(${freq[i] + 100} 0 ${256 - (freq[i] + 100)})`;
+      ctx?.fillRect(
+        i * barWidthRef.current + 11,
+        window.innerHeight / 2,
+        barWidthRef.current,
+        -freq[i],
+      );
     }
 
     rafRef.current = requestAnimationFrame(animate);
@@ -42,19 +52,30 @@ export const AudioDetector = () => {
     }
     const track = stream.getAudioTracks()[0];
 
-    console.log('track state:', track.readyState);
+    console.log("track state:", track.readyState);
 
-    track.onended = () => console.log('track ended');
-    track.onmute = () => console.log('track muted');
-    track.onunmute = () => console.log('track unmuted');
+    track.onended = () => console.log("track ended");
+    track.onmute = () => console.log("track muted");
+    track.onunmute = () => console.log("track unmuted");
     const analyser = audioRef.current.createAnalyser();
     analyserRef.current = analyser;
-    analyserRef.current.fftSize = 2048;
+    analyserRef.current.fftSize = 512;
     freqArray.current = new Uint8Array(analyserRef.current.frequencyBinCount);
-
+    barWidthRef.current = WIDTH / (freqArray.current.length * 2);
     sourceRef.current = audioRef.current.createMediaStreamSource(stream);
     sourceRef.current.connect(analyserRef.current);
     analyserRef.current.connect(audioRef.current.destination);
+
+    canvasRef.current
+      ?.getContext("2d")
+      ?.strokeRect(
+        10,
+        window.innerHeight / 2,
+        barWidthRef.current * freqArray.current.length,
+        -HEIGHT,
+      );
+    canvasRef.current?.getContext("2d");
+
     rafRef.current = requestAnimationFrame(animate);
     return () => {
       cancelAnimationFrame(rafRef.current);
@@ -62,10 +83,13 @@ export const AudioDetector = () => {
   }, [stream]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={WIDTH}
-      height={HEIGHT}
-    ></canvas>
+    <div className="p-2">
+      <canvas
+        className="border border-r-2"
+        ref={canvasRef}
+        width={WIDTH}
+        height={HEIGHT}
+      ></canvas>
+    </div>
   );
 };
