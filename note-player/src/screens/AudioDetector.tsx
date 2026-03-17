@@ -24,7 +24,10 @@ export const AudioDetector = () => {
       barWidthRef.current * freq.length - 2,
       -HEIGHT + 1,
     );
-
+    ctx!.fillStyle = 'white';
+    ctx!.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx!.fillStyle = 'black';
+    ctx?.fillText(`${Math.max(...freq)}`, 10, window.innerHeight / 2 + 40)
     for (let i = 0; i < freq.length; i++) {
       ctx!.fillStyle = `rgb(${freq[i] + 100} 0 ${256 - (freq[i] + 100)})`;
       ctx?.fillRect(
