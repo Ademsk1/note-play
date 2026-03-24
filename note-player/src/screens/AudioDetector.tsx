@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { SignalGraph } from "../utilities/SignalGraph";
+import { Notes } from "../utilities/Notes";
 
 const HEIGHT = 700;
 const WIDTH = window.innerWidth;
@@ -14,7 +15,7 @@ export const AudioDetector = () => {
   const graphRef = useRef<null | SignalGraph>(null)
   const animate = () => {
     analyserRef.current!.getByteFrequencyData(graphRef.current!.decibels);
-    graphRef.current!.clearData()
+    graphRef.current!.clear()
     graphRef.current!.drawData()
     graphRef.current!.drawPeaks()
     rafRef.current = requestAnimationFrame(animate);

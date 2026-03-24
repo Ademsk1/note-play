@@ -4,6 +4,7 @@
 // Decide on how much info to pass in to this class.... should we get everything in here
 // and just offload all the logic from the tsx file... it sure makes sense to move it somewhere
 import { standardDeviation, mean } from "./Math"
+import { Notes } from "./Notes"
 
 // need it to be much cleaner
 export class SignalGraph {
@@ -17,6 +18,8 @@ export class SignalGraph {
   topMargin: number
   dimensions: { x: number[], y: number[] }
   maxFreq: number
+  minimumDecibels: number
+  Notes: Notes
   constructor(width: number, height: number, context: CanvasRenderingContext2D, decibels: Uint8Array, sampleRate: number) {
     this.ctx = context
     this.width = width
@@ -26,19 +29,22 @@ export class SignalGraph {
     this.sampleRate = sampleRate
     this.leftMargin = 10
     this.topMargin = 0
+    this.minimumDecibels = 20
+    this.Notes = new Notes()
     this.dimensions = {
       x: [this.leftMargin + 1, this.width / 2 - 1],
       y: [this.topMargin + 1, this.height / 2 - 1]
     }
-    this.maxFreq = this.getMaxFreq()
+    this.maxFreq = this.sampleRate / 2
   }
 
-  getMaxFreq() {
-    const maxFrequency = this.sampleRate / 2
-    return maxFrequency
-  }
   getIndexFromFrequency(freq: number) {
     return freq * this.decibels.length / this.maxFreq
+  }
+
+  clear() {
+    this.clearData()
+    this.clearText()
   }
 
   getFrequencyFromIndex(i: number) {
@@ -87,6 +93,14 @@ export class SignalGraph {
       xStart, 1, xEnd, yEnd
     )
   }
+  clearText() {
+    const originalFillStyle = this.ctx.fillStyle
+    this.ctx.fillStyle = 'white'
+    this.ctx.fillRect(
+      0, this.height / 2 + 10, this.width, this.height / 2 - 10
+    )
+    this.ctx.fillStyle = originalFillStyle
+  }
 
 
   drawMaxFrequency(decibels: number | undefined = undefined) {
@@ -96,15 +110,18 @@ export class SignalGraph {
     }
     const y = this.dimensions.y[1] - decibels
     this.ctx.strokeStyle = 'black'
+    this.ctx.font = '30px Arial'
     this.ctx.fillRect(this.dimensions.x[0], y, this.width / 2, 1)
   }
 
-  drawPeaks = () => {
-    const peaks = this.getPeaks()
+  drawPeaks = (peaks: undefined | { frequency: number, decibel: number }[] = undefined) => {
+    if (!peaks) peaks = this.getPeaks()
     for (const peak of peaks) {
       this.drawMaxFrequency(peak.decibel)
     }
-
+    const note = this.Notes.guessNote(peaks.map(peak => peak.frequency))
+    this.ctx.fillText(peaks.map((peak) => peak.frequency).join('Hz '), 0, this.height / 2 + 50)
+    this.ctx.fillText(note, 0, this.height / 2 + 80)
   }
 
 
@@ -126,9 +143,10 @@ export class SignalGraph {
 
   getPeaks() {
     let k = 0
-    const m = mean(this.decibels)
-    const stddev = standardDeviation(this.decibels, m)
-    const stdev2 = m + 15 * stddev
+    const filteredDecibels = this.decibels.filter((decibel) => decibel > this.minimumDecibels)
+    const m = mean(filteredDecibels)
+    const stddev = standardDeviation(filteredDecibels, m)
+    const stdev2 = m + 10 * stddev
     let maximas = []
     let tmp = []
     while (k < this.decibels.length) {
