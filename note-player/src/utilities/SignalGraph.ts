@@ -161,7 +161,7 @@ export class SignalGraph {
     );
     const m = mean(filteredDecibels);
     const stddev = standardDeviation(filteredDecibels, m);
-    const stdev2 = m + 10 * stddev;
+    const stdev2 = m + 1 * stddev;
     const maximas = [];
     let tmp = [];
     while (k < this.decibels.length) {

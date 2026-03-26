@@ -13,8 +13,9 @@ export class Visualise {
     this.sound = [];
   }
   drawGrid() {
+    
     for (const [note, metadata] of Object.entries(NOTES)) {
-      continue;
+      
     }
   }
 }

@@ -114,12 +114,13 @@ export class Notes {
     const cAboveNoteIndex = this.notes[currentNote].frequencies.findIndex(
       (value) => value > frequency,
     );
-    const minIndex = Math.max(cAboveNoteIndex - 1, 0);
+    let minIndex = Math.max(cAboveNoteIndex - 1, 0);
     let currentFrequency = this.notes[currentNote].frequencies[minIndex];
     let priorNote = currentNote;
     let priorFrequency = currentFrequency;
     let noteIncrement = 0;
-    while (currentFrequency < frequency && noteIncrement < MAX_NUM_NOTES) {
+    while (currentFrequency < frequency && noteIncrement < MAX_NUM_NOTES + 1) {
+      if (currentNote === "B") minIndex++;
       priorNote = currentNote;
       priorFrequency = currentFrequency;
       currentNote = this.notes[currentNote].above;
