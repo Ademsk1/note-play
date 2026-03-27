@@ -37,6 +37,7 @@ export const AudioDetector = () => {
       "2d",
     )!;
     analyserRef.current = audioRef.current.createAnalyser();
+    analyserRef.current.fftSize = 8192
     const freqs = new Uint8Array(analyserRef.current.frequencyBinCount);
     audioContext.createMediaStreamSource(stream).connect(analyserRef.current);
     graphRef.current = new SignalGraph(
@@ -63,6 +64,7 @@ export const AudioDetector = () => {
         width={WIDTH}
         height={HEIGHT}
       ></canvas>
+
     </div>
   );
 };

@@ -122,7 +122,7 @@ export class SignalGraph {
   }
 
   drawPeaks = (peaks: undefined | SoundData = undefined) => {
-    if (!peaks) peaks = this.getPeaks();
+    if (!peaks) peaks = this.getPeaksSimple()
     for (const peak of peaks) {
       this.drawMaxFrequency(peak.decibel);
     }
@@ -154,14 +154,89 @@ export class SignalGraph {
     };
   }
 
+  getPeaksSimple() {
+    // works off the idea that in a piano, there will most likely be 2 peaks of frequency
+    // need to clear the vicinity once a peaks been found ....
+    // but seems to work pretty well for tone generator reading! 
+
+    let max = this.decibels[0]
+    let secondMax = this.decibels[0]
+    let maxFreq = 0
+    let secondMaxFreq = 0
+    for (let i = 1; i < this.decibels.length; i++) {
+      if (max < this.decibels[i]) {
+
+        secondMax = max
+        secondMaxFreq = maxFreq
+        max = this.decibels[i]
+        maxFreq = this.getFrequencyFromIndex(i)
+      } else if (secondMax < this.decibels[i]) {
+        secondMax = this.decibels[i]
+        secondMaxFreq = this.getFrequencyFromIndex(i)
+      }
+    }
+    return [
+      { frequency: maxFreq, decibel: max },
+      { frequency: secondMaxFreq, decibel: secondMax }
+    ]
+  }
+
+  getRollingPeaks(lag: number = 20, threshold = 1) {
+    // rolling standard deviation and mean
+    // restart when at a baseline of some kind
+    // doesnt really work very well...
+    const lastDataPoints = []
+    let maximas: SoundData = []
+    let goingUp = false
+
+    let k = 0
+    while (k < this.decibels.length) {
+      const decibel = this.decibels[k]
+      lastDataPoints.push(decibel)
+      if (k > lag) {
+        lastDataPoints.shift()
+        const m = mean(lastDataPoints)
+        const stddev = standardDeviation(lastDataPoints, m)
+        if (decibel > m + stddev * threshold) {
+          goingUp = this.decibels[k + 1] > decibel
+          while (goingUp) {
+            k++
+            goingUp = this.decibels[k + 1] > decibel
+          }
+          maximas.push({ decibel: decibel, frequency: this.getFrequencyFromIndex(k) })
+        }
+      }
+      k++
+    }
+
+    for (let i = 0; i < this.decibels.length; i++) {
+      const decibel = this.decibels[i]
+      lastDataPoints.push(decibel)
+      if (i > lag) {
+        lastDataPoints.shift()
+        const m = mean(lastDataPoints)
+        const stddev = standardDeviation(lastDataPoints, m)
+        if (decibel > m + stddev * threshold) {
+          goingUp = this.decibels[i + 1] > decibel
+          if (goingUp) {
+
+          }
+        }
+      }
+    }
+    return maximas
+  }
+
+
   getPeaks() {
+    // works not too badly! Need to configure fftSize with it to properly get the peaks. 
     let k = 0;
     const filteredDecibels = this.decibels.filter(
-      (decibel) => decibel > this.minimumDecibels,
+      (decibel: number) => decibel > this.minimumDecibels,
     );
     const m = mean(filteredDecibels);
     const stddev = standardDeviation(filteredDecibels, m);
-    const stdev2 = m + 1 * stddev;
+    const stdev2 = m + 5 * stddev;
     const maximas = [];
     let tmp = [];
     while (k < this.decibels.length) {

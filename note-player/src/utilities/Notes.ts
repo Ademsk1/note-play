@@ -73,8 +73,16 @@ export class Notes {
   getFrequencyWindow(note: string, index: number) {
     const { frequencies, above, below } = this.notes[note];
     const frequency = frequencies[index];
-    const fUp = this.notes[above].frequencies[index];
-    const fBelow = this.notes[below].frequencies[index];
+    let incrementOctave = 0
+    let decrementOctave = 0
+    if (above === 'C') {
+      incrementOctave = 1
+    }
+    if (below === 'B') {
+      decrementOctave = 1
+    }
+    const fUp = this.notes[above].frequencies[index + incrementOctave]
+    const fBelow = this.notes[below].frequencies[index + decrementOctave];
     const halfUp = frequency + (fUp - frequency) / 2;
     const halfDown = frequency - (frequency - fBelow) / 2;
     return {
@@ -91,18 +99,7 @@ export class Notes {
   ) {
     const differenceAbove = Math.abs(noteAboveFreq - frequency);
     const differenceBelow = Math.abs(frequency - noteBelowFreq);
-    console.log(
-      "Frequency ",
-      frequency,
-      noteBelow,
-      ":",
-      noteBelowFreq,
-      noteAbove,
-      ":",
-      noteAboveFreq,
-    );
-    console.log("Difference above, ", differenceAbove);
-    console.log("Difference below ", differenceBelow);
+
     if (differenceAbove > differenceBelow) {
       return noteBelow;
     } else {
@@ -134,7 +131,7 @@ export class Notes {
       currentFrequency,
       frequency,
     );
-    return closestNote;
+    return `${closestNote}${minIndex}`
   }
   guessNote(frequencies: number[]) {
     const counter: Record<string, number> = {};
