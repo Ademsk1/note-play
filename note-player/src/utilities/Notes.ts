@@ -149,7 +149,3 @@ export class Notes {
     return maxCountNote;
   }
 }
-
-const n = new Notes();
-const nt = n.guessNote([41.2, 82.41, 164.81, 329.63]);
-console.log(nt);

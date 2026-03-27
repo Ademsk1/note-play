@@ -1,24 +1,43 @@
 import { useEffect, useRef, useState } from "react";
 import { SignalGraph } from "../utilities/SignalGraph";
+import { Control } from "../Components/Control";
+import { togglePlay } from "../utilities/playState";
 
-const HEIGHT = 700;
-const WIDTH = window.innerWidth;
+const HEIGHT = 400;
+const WIDTH = window.innerWidth / 2;
 
 export const AudioDetector = () => {
   const [stream, setStream] = useState<null | MediaStream>(null);
-  // const [analyser, setAnalyser] = useState<null | AnalyserNode>(null);
   const audioRef = useRef(new AudioContext());
   const analyserRef = useRef<null | AnalyserNode>(null);
   const rafRef = useRef<number>(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const graphRef = useRef<null | SignalGraph>(null);
+
+  const [note, setNote] = useState('')
+  const [playState, setPlayState] = useState<'Play' | 'Pause'>('Pause')
+  const [visualFrequencyRange, setVisualFrequencyRange] = useState(0)
+
   const animate = () => {
     analyserRef.current!.getByteFrequencyData(graphRef.current!.decibels);
-    graphRef.current!.clear();
-    graphRef.current!.drawData();
-    graphRef.current!.drawPeaks();
+    const graph = graphRef.current as SignalGraph
+    graph.clear();
+    graph.drawData();
+    graph.drawPeaks();
+    if (graph.newNote) {
+      setNote(graph.currentNote)
+      graph.newNote = false
+    }
     rafRef.current = requestAnimationFrame(animate);
   };
+
+  useEffect(() => {
+    if (playState === 'Pause') {
+      cancelAnimationFrame(rafRef.current)
+    } else {
+      rafRef.current = requestAnimationFrame(animate);
+    }
+  }, [playState])
 
   useEffect(() => {
     const requestStream = async () => {
@@ -47,23 +66,26 @@ export const AudioDetector = () => {
       freqs,
       audioContext.sampleRate,
     );
+    setVisualFrequencyRange(graphRef.current.width)
     graphRef.current.drawFrame();
-    graphRef.current.drawTicks();
-
-    rafRef.current = requestAnimationFrame(animate);
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-    };
+    setPlayState('Play')
   }, [stream]);
 
   return (
     <div className="p-2">
-      <canvas
-        className="border border-r-2"
-        ref={canvasRef}
-        width={WIDTH}
-        height={HEIGHT}
-      ></canvas>
+      <div id="visuals" className="flex">
+        <canvas
+          className="border border-r-2 resize"
+          ref={canvasRef}
+          width={WIDTH}
+          height={HEIGHT}
+        ></canvas>
+      </div>
+      <div id="metadata">
+        <p>Note: {note}</p>
+      </div>
+      <Control range={visualFrequencyRange} setRange={setVisualFrequencyRange} playState={playState} onPlayStateChange={() => { setPlayState((prev) => togglePlay(prev)) }} />
+
 
     </div>
   );
