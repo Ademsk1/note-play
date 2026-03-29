@@ -12,15 +12,14 @@ const standardDeviation = (arr: Uint8Array | number[], m: number | undefined = u
   if (m === undefined) {
     m = mean(arr)
   }
-  return (
-    Math.sqrt(
-      mean(
-        arr.map((value) => (value - (m as number)) ** 2)
-      )
-    )
-  )
+  let variance = 0
+  const size = arr.length
+  for (let i = 0; i < size; i++) {
+    variance += (arr[i] - m) ** 2
+  }
+  return Math.sqrt(variance / size)
+
 }
 
 
 export { mean, standardDeviation }
-

@@ -4,7 +4,7 @@ import { Control } from "../Components/Control";
 import { togglePlay } from "../utilities/playState";
 
 const HEIGHT = 400;
-const WIDTH = window.innerWidth / 2;
+const WIDTH = window.innerWidth / 2
 
 export const AudioDetector = () => {
   const [stream, setStream] = useState<null | MediaStream>(null);
@@ -17,13 +17,12 @@ export const AudioDetector = () => {
   const [note, setNote] = useState('')
   const [playState, setPlayState] = useState<'Play' | 'Pause'>('Pause')
   const [visualFrequencyRange, setVisualFrequencyRange] = useState(0)
+  const [drawStats, setDrawStats] = useState(false)
 
   const animate = () => {
     analyserRef.current!.getByteFrequencyData(graphRef.current!.decibels);
     const graph = graphRef.current as SignalGraph
-    graph.clear();
-    graph.drawData();
-    graph.drawPeaks();
+    graph.execute()
     if (graph.newNote) {
       setNote(graph.currentNote)
       graph.newNote = false
@@ -38,6 +37,16 @@ export const AudioDetector = () => {
       rafRef.current = requestAnimationFrame(animate);
     }
   }, [playState])
+
+  useEffect(() => {
+    // cancelAnimationFrame(rafRef.current)
+    graphRef.current?.setRange(visualFrequencyRange)
+    // rafRe
+  }, [visualFrequencyRange])
+
+  useEffect(() => {
+    graphRef.current?.setShowStats(drawStats)
+  }, [drawStats])
 
   useEffect(() => {
     const requestStream = async () => {
@@ -66,7 +75,7 @@ export const AudioDetector = () => {
       freqs,
       audioContext.sampleRate,
     );
-    setVisualFrequencyRange(graphRef.current.width)
+    setVisualFrequencyRange(graphRef.current.maxFreq)
     graphRef.current.drawFrame();
     setPlayState('Play')
   }, [stream]);
@@ -84,9 +93,7 @@ export const AudioDetector = () => {
       <div id="metadata">
         <p>Note: {note}</p>
       </div>
-      <Control range={visualFrequencyRange} setRange={setVisualFrequencyRange} playState={playState} onPlayStateChange={() => { setPlayState((prev) => togglePlay(prev)) }} />
-
-
+      <Control range={visualFrequencyRange} setRange={(range) => setVisualFrequencyRange(range)} playState={playState} onPlayStateChange={() => { setPlayState((prev) => togglePlay(prev)) }} drawStats={drawStats} setDrawStats={(e: boolean) => { setDrawStats(e) }} />
     </div>
   );
 };
