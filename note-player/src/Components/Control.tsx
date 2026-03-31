@@ -9,13 +9,12 @@ type ControlProps = {
   setRange: (range: number) => void
   onPlayStateChange: () => void
   playState: 'Play' | 'Pause'
-  drawStats: boolean
   setDrawStats: (e: boolean) => void
 }
 
 
 const controlVariants = tv({
-  base: 'border outline-none',
+  base: 'border outline-none p-1',
   variants: {
     color: {
       primary: 'border-black focus:border-black focus-visible:border-black',
@@ -24,9 +23,7 @@ const controlVariants = tv({
   }
 })
 
-export const Control = ({ range, setRange, playState, onPlayStateChange, drawStats, setDrawStats }: ControlProps) => {
-  console.log({ range })
-
+export const Control = ({ range, setRange, playState, onPlayStateChange, setDrawStats }: ControlProps) => {
   const [fRange, setFRange] = useState("")
   const [invalidRange, setInvalidRange] = useState(false)
   useEffect(() => {
@@ -57,18 +54,24 @@ export const Control = ({ range, setRange, playState, onPlayStateChange, drawSta
   }
 
   return (
-    <div id="control" className="flex gap-1 **:justify-end">
-      <Button className="w-12" onClick={onPlayStateChange}>{togglePlay(playState)}</Button>
+    <div id="control" className="flex gap-1 **:justify-end border w-fit p-1">
+      <Button color={playState === 'Play' ? "error" : "success"} className={"w-12 text-white"} onClick={onPlayStateChange}>{togglePlay(playState)}</Button>
       <div className="flex flex-col">
         <label className="text-xs" htmlFor="frequency_range">Max frequency range (Hz)</label>
         <input value={fRange} onChange={handleRangeChange} onKeyDown={onKeyDown} name="frequency_range" className={controlVariants({ color: invalidRange ? 'error' : 'primary' })} type="text" />
       </div>
       <div className="flex flex-col">
-        <label className="text-xs" htmlFor="drawStats">Stats</label>
-        <input className="w-full h-full" name="drawStats" type="checkbox" onChange={handleStatsDrawChange} />
+        <input className="h-8" name="drawStats" type="checkbox" onChange={handleStatsDrawChange} />
+        <label className="text-xs" htmlFor="drawStats">Statistics</label>
+
+      </div>
+      <div className="flex flex-col">
+        <input name="toggle-source" type="checkbox" className="h-8" />
+        <label className="text-xs" htmlFor="toggle-source">Live Audio</label>
+
       </div>
 
-    </div>
+    </div >
   )
 
 }

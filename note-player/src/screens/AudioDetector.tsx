@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { SignalGraph } from "../utilities/SignalGraph";
 import { Control } from "../Components/Control";
 import { togglePlay } from "../utilities/playState";
-
+import { RecordControl } from "../Components/Record";
+import type { HTMLAudioElement2 } from "../Components/Record";
 const HEIGHT = 400;
 const WIDTH = window.innerWidth / 2
 
@@ -13,12 +14,13 @@ export const AudioDetector = () => {
   const rafRef = useRef<number>(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const graphRef = useRef<null | SignalGraph>(null);
+  const audioElement = useRef<HTMLAudioElement2>(null)
 
   const [note, setNote] = useState('')
   const [playState, setPlayState] = useState<'Play' | 'Pause'>('Pause')
   const [visualFrequencyRange, setVisualFrequencyRange] = useState(0)
   const [drawStats, setDrawStats] = useState(false)
-
+  const [source, setSource] = useState<'live' | 'recording'>('live')
   const animate = () => {
     analyserRef.current!.getByteFrequencyData(graphRef.current!.decibels);
     const graph = graphRef.current as SignalGraph
@@ -54,8 +56,12 @@ export const AudioDetector = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setStream(stream);
     };
-    requestStream();
-  }, []);
+    if (source === 'live') {
+      requestStream();
+    } else {
+      setStream(audioElement.current?.captureStream() ?? null)
+    }
+  }, [source]);
   useEffect(() => {
     if (!stream) {
       return;
@@ -78,7 +84,7 @@ export const AudioDetector = () => {
     setVisualFrequencyRange(graphRef.current.maxFreq)
     graphRef.current.drawFrame();
     setPlayState('Play')
-  }, [stream]);
+  }, [stream?.id]);
 
   return (
     <div className="p-2">
@@ -93,7 +99,10 @@ export const AudioDetector = () => {
       <div id="metadata">
         <p>Note: {note}</p>
       </div>
-      <Control range={visualFrequencyRange} setRange={(range) => setVisualFrequencyRange(range)} playState={playState} onPlayStateChange={() => { setPlayState((prev) => togglePlay(prev)) }} drawStats={drawStats} setDrawStats={(e: boolean) => { setDrawStats(e) }} />
+      <div className="flex flex-col gap-1">
+        <Control range={visualFrequencyRange} setRange={(range) => setVisualFrequencyRange(range)} playState={playState} onPlayStateChange={() => { setPlayState((prev) => togglePlay(prev)) }} setDrawStats={(e: boolean) => { setDrawStats(e) }} />
+        <RecordControl stream={stream} audioElement={audioElement} setStream={(stream: MediaStream) => { setStream(stream) }} />
+      </div>
     </div>
   );
 };

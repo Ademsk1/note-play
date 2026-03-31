@@ -18,8 +18,21 @@ const standardDeviation = (arr: Uint8Array | number[], m: number | undefined = u
     variance += (arr[i] - m) ** 2
   }
   return Math.sqrt(variance / size)
+}
 
+const covariance = (arr1: Uint8Array | number[], m1: number | undefined, arr2: Uint8Array | number[], m2: number | undefined) => {
+  if (!m1) {
+    m1 = mean(arr1)
+  }
+  if (!m2) {
+    m2 = mean(arr2)
+  }
+  let s = 0
+  for (let i = 0; i < arr1.length; i++) {
+    s += (arr1[i] - m1) * (arr2[i] - m2)
+  }
+  return s / arr1.length
 }
 
 
-export { mean, standardDeviation }
+export { mean, standardDeviation, covariance }
