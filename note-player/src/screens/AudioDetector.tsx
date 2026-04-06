@@ -3,7 +3,6 @@ import { SignalGraph } from "../utilities/SignalGraph";
 import { Control } from "../Components/Control";
 import { togglePlay } from "../utilities/playState";
 import { RecordControl } from "../Components/Record";
-import type { HTMLAudioElement2 } from "../Components/Record";
 const HEIGHT = 400;
 const WIDTH = window.innerWidth / 2
 
@@ -14,7 +13,7 @@ export const AudioDetector = () => {
   const rafRef = useRef<number>(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const graphRef = useRef<null | SignalGraph>(null);
-  const audioElement = useRef<HTMLAudioElement2>(null)
+  const audioElement = useRef<HTMLMediaElement>(null)
 
   const [note, setNote] = useState('')
   const [playState, setPlayState] = useState<'Play' | 'Pause'>('Pause')
@@ -51,15 +50,23 @@ export const AudioDetector = () => {
   }, [drawStats])
 
   useEffect(() => {
+    console.log('setting source')
     const requestStream = async () => {
-      await audioRef.current.resume();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setStream(stream);
     };
     if (source === 'live') {
       requestStream();
     } else {
-      setStream(audioElement.current?.captureStream() ?? null)
+      const mediaElement = audioRef.current.createMediaElementSource(audioElement.current!)
+      // mediaElement.connect(audioRef.current.destination)
+      const mediaStreamDest = audioRef.current.createMediaStreamDestination()
+      mediaElement.connect(mediaStreamDest)
+      mediaElement.connect(audioRef.current.destination)
+      setStream(mediaStreamDest.stream)
+
+    }
+    return () => {
     }
   }, [source]);
   useEffect(() => {
@@ -70,6 +77,7 @@ export const AudioDetector = () => {
     const canvasContext = (canvasRef.current as HTMLCanvasElement).getContext(
       "2d",
     )!;
+    console.log('Creating analyser')
     analyserRef.current = audioRef.current.createAnalyser();
     analyserRef.current.fftSize = 8192
     const freqs = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -101,7 +109,7 @@ export const AudioDetector = () => {
       </div>
       <div className="flex flex-col gap-1">
         <Control range={visualFrequencyRange} setRange={(range) => setVisualFrequencyRange(range)} playState={playState} onPlayStateChange={() => { setPlayState((prev) => togglePlay(prev)) }} setDrawStats={(e: boolean) => { setDrawStats(e) }} />
-        <RecordControl stream={stream} audioElement={audioElement} setStream={(stream: MediaStream) => { setStream(stream) }} />
+        <RecordControl stream={stream} audioElement={audioElement} setSource={(source: 'live' | 'recording') => { setSource(source) }} />
       </div>
     </div>
   );

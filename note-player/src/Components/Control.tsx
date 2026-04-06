@@ -49,7 +49,7 @@ export const Control = ({ range, setRange, playState, onPlayStateChange, setDraw
     }
   }
 
-  const handleStatsDrawChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const toggleStats = (e: ChangeEvent<HTMLInputElement>) => {
     setDrawStats(e.currentTarget.checked)
   }
 
@@ -61,15 +61,11 @@ export const Control = ({ range, setRange, playState, onPlayStateChange, setDraw
         <input value={fRange} onChange={handleRangeChange} onKeyDown={onKeyDown} name="frequency_range" className={controlVariants({ color: invalidRange ? 'error' : 'primary' })} type="text" />
       </div>
       <div className="flex flex-col">
-        <input className="h-8" name="drawStats" type="checkbox" onChange={handleStatsDrawChange} />
+        <input className="h-8" name="drawStats" type="checkbox" onChange={toggleStats} />
         <label className="text-xs" htmlFor="drawStats">Statistics</label>
 
       </div>
-      <div className="flex flex-col">
-        <input name="toggle-source" type="checkbox" className="h-8" />
-        <label className="text-xs" htmlFor="toggle-source">Live Audio</label>
 
-      </div>
 
     </div >
   )
