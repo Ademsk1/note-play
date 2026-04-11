@@ -4,6 +4,7 @@ import { NOTES } from '../utilities/Notes';
 type RecordingProps = {
   audioUrls: string[];
   setIsComplete: React.Dispatch<React.SetStateAction<boolean>>;
+  setPlayState: React.Dispatch<React.SetStateAction<'Play' | 'Pause'>>;
 };
 
 const validateNotes = (selectedNotes: string[]) => {

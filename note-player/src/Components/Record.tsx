@@ -7,6 +7,7 @@ type RecorderControlProps = {
   setSource: (source: 'live' | 'recording') => void;
   audioUrls: string[];
   setAudioUrls: React.Dispatch<React.SetStateAction<string[]>>;
+  setPlayState: React.Dispatch<React.SetStateAction<'Play' | 'Pause'>>;
 };
 
 export const RecordControl = ({
@@ -29,6 +30,12 @@ export const RecordControl = ({
     }
     recordingRef.current.addEventListener('dataavailable', (e) => {
       chunks.current.push(e.data);
+    });
+    recordingRef.current.addEventListener('start', () => {
+      //remove object url if we havent saved it.
+      if (!audioUrls.includes(url)) {
+        window.URL.revokeObjectURL(url);
+      }
     });
     recordingRef.current.addEventListener('stop', () => {
       const blob = new Blob(chunks.current, { type: 'audio/ogg; codecs=opus' });
@@ -61,7 +68,6 @@ export const RecordControl = ({
   };
 
   useEffect(() => {
-    console.log('test here');
     if (recording) {
       recordingRef.current.start();
     } else {

@@ -3,6 +3,7 @@ import { SignalGraph } from '../utilities/SignalGraph';
 import { Control } from '../Components/Control';
 import { togglePlay } from '../utilities/playState';
 import { RecordControl } from '../Components/Record';
+import { Recordings } from '../Components/Recordings';
 const HEIGHT = 400;
 const WIDTH = window.innerWidth / 2;
 
@@ -19,6 +20,7 @@ export const AudioDetector = () => {
   const [playState, setPlayState] = useState<'Play' | 'Pause'>('Pause');
   const [visualFrequencyRange, setVisualFrequencyRange] = useState(0);
   const [drawStats, setDrawStats] = useState(false);
+  const [recordingsReady, setRecordingsReady] = useState(false);
   const [source, setSource] = useState<'live' | 'recording'>('live');
   const animate = () => {
     analyserRef.current!.getByteFrequencyData(graphRef.current!.decibels);
@@ -112,35 +114,12 @@ export const AudioDetector = () => {
             and the program will try and use statistical methods for identifying
             a note.
           </p>
-          {audioUrls.map((url) => {
-            return (
-              <div className="flex gap-1">
-                <audio
-                  controls
-                  src={url}
-                ></audio>
-                <select
-                  className="border"
-                  name="pets"
-                  id="pet-select"
-                >
-                  <option value="">--Please label the note--</option>
-                  <option value="c">c</option>
-                  <option value="c#">c#</option>
-                  <option value="d">d</option>
-                  <option value="d#">d</option>
-                  <option value="e">e</option>
-                  <option value="f">f</option>
-                  <option value="f#">f#</option>
-                  <option value="g">g</option>
-                  <option value="g#">g#</option>
-                  <option value="a">a</option>
-                  <option value="a#">a#</option>
-                  <option value="B">Goldfish</option>
-                </select>
-              </div>
-            );
-          })}
+          <Recordings
+            audioUrls={audioUrls}
+            setIsComplete={setRecordingsReady}
+            setPlayState={setPlayState}
+          />
+          <p>Ready for analysis: {`${recordingsReady}`}</p>
         </div>
       </div>
       <div id="metadata">
@@ -160,6 +139,7 @@ export const AudioDetector = () => {
         />
         {stream && (
           <RecordControl
+            setPlayState={setPlayState}
             stream={stream}
             audioElement={audioElement}
             setSource={(source: 'live' | 'recording') => {
