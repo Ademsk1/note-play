@@ -1,76 +1,118 @@
-import { useEffect, useRef, useState, type ChangeEvent } from "react"
-import { Button } from "./Button"
-
-
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Button } from './Button';
 
 type RecorderControlProps = {
-  stream: MediaStream | null
-  audioElement: React.RefObject<HTMLAudioElement | null>
-  setSource: (source: 'live' | 'recording') => void
-}
+  stream: MediaStream;
+  audioElement: React.RefObject<HTMLAudioElement | null>;
+  setSource: (source: 'live' | 'recording') => void;
+  audioUrls: string[];
+  setAudioUrls: React.Dispatch<React.SetStateAction<string[]>>;
+};
 
-
-export const RecordControl = ({ stream, audioElement, setSource }: RecorderControlProps) => {
-  if (!stream) {
-    return <p>No stream</p>
-  }
-  console.log({ stream })
-  const [recording, setRecording] = useState(false)
-  const recordingRef = useRef(new MediaRecorder(stream))
-  const chunks = useRef<BlobPart[]>([])
+export const RecordControl = ({
+  stream,
+  audioElement,
+  setSource,
+  audioUrls,
+  setAudioUrls,
+}: RecorderControlProps) => {
+  const [recording, setRecording] = useState(false);
+  const [hasAudio, setHasAudio] = useState(false);
+  const recordingRef = useRef(new MediaRecorder(stream));
+  const chunks = useRef<BlobPart[]>([]);
+  const [url, setUrl] = useState<string>('');
   useEffect(() => {
-    if (!recordingRef.current) return
-    if (!audioElement.current) return
+    if (!recordingRef.current) return;
+    if (!audioElement.current) return;
     if (recording) {
-      chunks.current = []
+      chunks.current = [];
     }
     recordingRef.current.addEventListener('dataavailable', (e) => {
-      console.log('pushing!')
-      chunks.current.push(e.data)
-    })
-    audioElement.current.addEventListener('play', (e) => {
-    })
-    recordingRef.current.addEventListener('stop', (e) => {
-      const blob = new Blob(chunks.current, { type: "audio/ogg; codecs=opus" });
+      chunks.current.push(e.data);
+    });
+    recordingRef.current.addEventListener('stop', () => {
+      const blob = new Blob(chunks.current, { type: 'audio/ogg; codecs=opus' });
       const audioURL = window.URL.createObjectURL(blob);
-      audioElement.current!.src = audioURL
-    })
+      setUrl(audioURL);
+      audioElement.current!.src = audioURL;
+      setHasAudio(true);
+    });
     return () => {
-      chunks.current = []
-    }
-  }, [recording])
+      setHasAudio(false);
+      chunks.current = [];
+    };
+  }, []);
 
   const handleRecording = () => {
-    setRecording(true)
-    chunks.current = []
-  }
+    setRecording(true);
+    chunks.current = [];
+  };
   const toggleSource = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.currentTarget.checked) {
-      setSource('recording')
+      setSource('recording');
     } else {
-      setSource('live')
+      setSource('live');
     }
-  }
+  };
 
+  const saveAudio = () => {
+    setHasAudio(false);
+    setAudioUrls((audioUrls) => [...audioUrls, url]);
+  };
 
   useEffect(() => {
+    console.log('test here');
     if (recording) {
-      console.log('starting')
-      recordingRef.current.start()
+      recordingRef.current.start();
     } else {
-      console.log('stopping')
-      recordingRef.current.stop()
+      recordingRef.current.stop();
     }
-  }, [recording])
+  }, [recording]);
   return (
-    <div id="record" className="w-fit flex border p-1 gap-1">
-      <Button onClick={handleRecording} disabled={recording}>Record</Button>
-      <Button onClick={() => { setRecording(false) }} disabled={!recording} color={"secondary"}>Stop</Button>
+    <div
+      id="record"
+      className="w-fit flex border p-1 gap-1"
+    >
+      <Button
+        onClick={handleRecording}
+        disabled={recording}
+      >
+        Record
+      </Button>
+      <Button
+        onClick={() => {
+          setRecording(false);
+        }}
+        disabled={!recording}
+        color={'secondary'}
+      >
+        Stop
+      </Button>
       <div className="flex flex-col">
-        <input onChange={toggleSource} name="toggle-source" type="checkbox" className="h-8" />
-        <label className="text-xs" htmlFor="toggle-source">Live Audio</label>
+        <input
+          onChange={toggleSource}
+          name="toggle-source"
+          type="checkbox"
+          className="h-8"
+        />
+        <label
+          className="text-xs"
+          htmlFor="toggle-source"
+        >
+          Live Audio
+        </label>
       </div>
-      <audio className="" ref={audioElement} controls></audio>
+      <audio
+        className=""
+        ref={audioElement}
+        controls
+      ></audio>
+      <Button
+        onClick={saveAudio}
+        disabled={!hasAudio}
+      >
+        Save Audio
+      </Button>
     </div>
-  )
-}
+  );
+};

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { SignalGraph } from "../utilities/SignalGraph";
-import { Control } from "../Components/Control";
-import { togglePlay } from "../utilities/playState";
-import { RecordControl } from "../Components/Record";
+import { useEffect, useRef, useState } from 'react';
+import { SignalGraph } from '../utilities/SignalGraph';
+import { Control } from '../Components/Control';
+import { togglePlay } from '../utilities/playState';
+import { RecordControl } from '../Components/Record';
 const HEIGHT = 400;
-const WIDTH = window.innerWidth / 2
+const WIDTH = window.innerWidth / 2;
 
 export const AudioDetector = () => {
   const [stream, setStream] = useState<null | MediaStream>(null);
@@ -13,44 +13,43 @@ export const AudioDetector = () => {
   const rafRef = useRef<number>(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const graphRef = useRef<null | SignalGraph>(null);
-  const audioElement = useRef<HTMLMediaElement>(null)
-
-  const [note, setNote] = useState('')
-  const [playState, setPlayState] = useState<'Play' | 'Pause'>('Pause')
-  const [visualFrequencyRange, setVisualFrequencyRange] = useState(0)
-  const [drawStats, setDrawStats] = useState(false)
-  const [source, setSource] = useState<'live' | 'recording'>('live')
+  const audioElement = useRef<HTMLMediaElement>(null);
+  const [audioUrls, setAudioUrls] = useState<string[]>([]);
+  const [note, setNote] = useState('');
+  const [playState, setPlayState] = useState<'Play' | 'Pause'>('Pause');
+  const [visualFrequencyRange, setVisualFrequencyRange] = useState(0);
+  const [drawStats, setDrawStats] = useState(false);
+  const [source, setSource] = useState<'live' | 'recording'>('live');
   const animate = () => {
     analyserRef.current!.getByteFrequencyData(graphRef.current!.decibels);
-    const graph = graphRef.current as SignalGraph
-    graph.execute()
+    const graph = graphRef.current as SignalGraph;
+    graph.execute();
     if (graph.newNote) {
-      setNote(graph.currentNote)
-      graph.newNote = false
+      setNote(graph.currentNote);
+      graph.newNote = false;
     }
     rafRef.current = requestAnimationFrame(animate);
   };
 
   useEffect(() => {
     if (playState === 'Pause') {
-      cancelAnimationFrame(rafRef.current)
+      cancelAnimationFrame(rafRef.current);
     } else {
       rafRef.current = requestAnimationFrame(animate);
     }
-  }, [playState])
+  }, [playState]);
 
   useEffect(() => {
     // cancelAnimationFrame(rafRef.current)
-    graphRef.current?.setRange(visualFrequencyRange)
+    graphRef.current?.setRange(visualFrequencyRange);
     // rafRe
-  }, [visualFrequencyRange])
+  }, [visualFrequencyRange]);
 
   useEffect(() => {
-    graphRef.current?.setShowStats(drawStats)
-  }, [drawStats])
+    graphRef.current?.setShowStats(drawStats);
+  }, [drawStats]);
 
   useEffect(() => {
-    console.log('setting source')
     const requestStream = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setStream(stream);
@@ -58,16 +57,16 @@ export const AudioDetector = () => {
     if (source === 'live') {
       requestStream();
     } else {
-      const mediaElement = audioRef.current.createMediaElementSource(audioElement.current!)
+      const mediaElement = audioRef.current.createMediaElementSource(
+        audioElement.current!,
+      );
       // mediaElement.connect(audioRef.current.destination)
-      const mediaStreamDest = audioRef.current.createMediaStreamDestination()
-      mediaElement.connect(mediaStreamDest)
-      mediaElement.connect(audioRef.current.destination)
-      setStream(mediaStreamDest.stream)
-
+      const mediaStreamDest = audioRef.current.createMediaStreamDestination();
+      mediaElement.connect(mediaStreamDest);
+      mediaElement.connect(audioRef.current.destination);
+      setStream(mediaStreamDest.stream);
     }
-    return () => {
-    }
+    return () => {};
   }, [source]);
   useEffect(() => {
     if (!stream) {
@@ -75,11 +74,11 @@ export const AudioDetector = () => {
     }
     const audioContext = audioRef.current;
     const canvasContext = (canvasRef.current as HTMLCanvasElement).getContext(
-      "2d",
+      '2d',
     )!;
-    console.log('Creating analyser')
+    console.log('Creating analyser');
     analyserRef.current = audioRef.current.createAnalyser();
-    analyserRef.current.fftSize = 8192
+    analyserRef.current.fftSize = 8192;
     const freqs = new Uint8Array(analyserRef.current.frequencyBinCount);
     audioContext.createMediaStreamSource(stream).connect(analyserRef.current);
     graphRef.current = new SignalGraph(
@@ -89,27 +88,87 @@ export const AudioDetector = () => {
       freqs,
       audioContext.sampleRate,
     );
-    setVisualFrequencyRange(graphRef.current.maxFreq)
+    setVisualFrequencyRange(graphRef.current.maxFreq);
     graphRef.current.drawFrame();
-    setPlayState('Play')
+    setPlayState('Play');
   }, [stream?.id]);
-
   return (
     <div className="p-2">
-      <div id="visuals" className="flex">
+      <div
+        id="visuals"
+        className="flex gap-2"
+      >
         <canvas
           className="border border-r-2 resize"
           ref={canvasRef}
           width={WIDTH}
           height={HEIGHT}
         ></canvas>
+        <div>
+          <p>
+            hello. Here is an audio analyser website. Below the graph, you have
+            controls for the visuals, and also a recording section, for
+            recording your notes. You can save the audio, tag it with a note,
+            and the program will try and use statistical methods for identifying
+            a note.
+          </p>
+          {audioUrls.map((url) => {
+            return (
+              <div className="flex gap-1">
+                <audio
+                  controls
+                  src={url}
+                ></audio>
+                <select
+                  className="border"
+                  name="pets"
+                  id="pet-select"
+                >
+                  <option value="">--Please label the note--</option>
+                  <option value="c">c</option>
+                  <option value="c#">c#</option>
+                  <option value="d">d</option>
+                  <option value="d#">d</option>
+                  <option value="e">e</option>
+                  <option value="f">f</option>
+                  <option value="f#">f#</option>
+                  <option value="g">g</option>
+                  <option value="g#">g#</option>
+                  <option value="a">a</option>
+                  <option value="a#">a#</option>
+                  <option value="B">Goldfish</option>
+                </select>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <div id="metadata">
         <p>Note: {note}</p>
       </div>
       <div className="flex flex-col gap-1">
-        <Control range={visualFrequencyRange} setRange={(range) => setVisualFrequencyRange(range)} playState={playState} onPlayStateChange={() => { setPlayState((prev) => togglePlay(prev)) }} setDrawStats={(e: boolean) => { setDrawStats(e) }} />
-        <RecordControl stream={stream} audioElement={audioElement} setSource={(source: 'live' | 'recording') => { setSource(source) }} />
+        <Control
+          range={visualFrequencyRange}
+          setRange={(range) => setVisualFrequencyRange(range)}
+          playState={playState}
+          onPlayStateChange={() => {
+            setPlayState((prev) => togglePlay(prev));
+          }}
+          setDrawStats={(e: boolean) => {
+            setDrawStats(e);
+          }}
+        />
+        {stream && (
+          <RecordControl
+            stream={stream}
+            audioElement={audioElement}
+            setSource={(source: 'live' | 'recording') => {
+              setSource(source);
+            }}
+            audioUrls={audioUrls}
+            setAudioUrls={setAudioUrls}
+          />
+        )}
       </div>
     </div>
   );
